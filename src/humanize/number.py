@@ -282,8 +282,12 @@ def intword(value: NumberOrString, format: str = "%.1f") -> str:
     chopped = value / power
     rounded_value = float(format % chopped)
 
-    if not largest_ordinal and rounded_value * power == powers[ordinal + 1]:
-        # After rounding, we end up just at the next power
+    if (
+        not largest_ordinal
+        and rounded_value >= 1000
+        and powers[ordinal + 1] == power * 1000
+    ):
+        # After rounding, we end up just at the next power (not across a gap)
         ordinal += 1
         rounded_value = 1.0
 
