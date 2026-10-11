@@ -279,13 +279,13 @@ def intword(value: NumberOrString, format: str = "%.1f") -> str:
     # Consider the biggest power of 10 that is smaller than value
     ordinal -= 1
     power = powers[ordinal]
-    chopped = value / power
-    rounded_value = float(format % chopped)
+    rounded_value = float(format % (value / power))
 
-    if not largest_ordinal and rounded_value * power == powers[ordinal + 1]:
-        # After rounding, we end up just at the next power
+    # If rounding pushed us to 1000 of this unit, carry to the next unit
+    # (but never past decillion, so the gap to googol is preserved).
+    while not largest_ordinal and rounded_value >= 1000 and ordinal < 10:
         ordinal += 1
-        rounded_value = 1.0
+        rounded_value = float(format % (value / powers[ordinal]))
 
     singular, plural = human_powers[ordinal]
     unit = _ngettext(singular, plural, math.ceil(rounded_value))
