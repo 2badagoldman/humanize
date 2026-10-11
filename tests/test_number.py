@@ -148,6 +148,38 @@ def test_intword(test_args: list[str], expected: str) -> None:
     assert humanize.intword(*test_args) == expected
 
 
+@pytest.mark.parametrize("exponent", range(6, 34, 3))
+@pytest.mark.parametrize(
+    "format, expected_number", [("%.1f", "1.0"), ("%.0f", "1"), ("%.2f", "1.00")]
+)
+def test_intword_rounds_up_to_next_power(
+    exponent: int, format: str, expected_number: str
+) -> None:
+    # Values just below a power of 1000 must carry to the next unit,
+    # not render as "1000.0 <previous unit>"
+    next_unit = number.human_powers[number.powers.index(10**exponent)][0]
+    expected = f"{expected_number} {next_unit}"
+    assert humanize.intword(10**exponent - 1, format) == expected
+    assert humanize.intword(-(10**exponent - 1), format) == f"-{expected}"
+    assert humanize.intword(10**exponent - 10 ** (exponent - 7), format) == expected
+
+
+def test_intword_never_shows_1000_below_decillion() -> None:
+    for exponent in range(6, 37):
+        for value in (10**exponent - 1, 10**exponent, 10**exponent + 1):
+            if value >= 10**33:
+                break
+            for format in ("%.1f", "%.0f"):
+                shown = humanize.intword(value, format).split()[0]
+                assert float(shown) < 1000, (value, format, shown)
+
+
+def test_intword_gap_above_decillion_unchanged() -> None:
+    assert humanize.intword(10**36) == "1000.0 decillion"
+    assert humanize.intword(10**36 - 1) == "1000.0 decillion"
+    assert humanize.intword(2 * 10**100) == "2.0 googol"
+
+
 @pytest.mark.parametrize(
     "test_input, expected",
     [
