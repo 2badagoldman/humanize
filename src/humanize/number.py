@@ -140,11 +140,19 @@ def ordinal(value: NumberOrString, gender: str = "male") -> str:
     return f"{value}{P_(*_ORDINAL_SUFFIXES[gender][digit])}"
 
 
-def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
-    """Converts an integer to a string containing commas every three digits.
+def intcomma(
+    value: NumberOrString,
+    ndigits: int | None = None,
+    *,
+    separator: str | None = None,
+) -> str:
+    """Converts an integer to a string containing separators every three digits.
 
     For example, 3000 becomes "3,000" and 45000 becomes "45,000". To maintain some
     compatibility with Django's `intcomma`, this function also accepts floats.
+
+    The thousands separator defaults to the current locale's separator (",", unless
+    a locale such as `de_DE` has been activated). Pass `separator` to override it.
 
     Examples:
         ```pycon
@@ -164,15 +172,21 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
         '14,308.4'
         >>> intcomma(None)
         'None'
+        >>> intcomma(1234567, separator=".")
+        '1.234.567'
+        >>> intcomma(1234.5, separator=" ")
+        '1 234.5'
 
         ```
 
     Args:
         value (int, float, str): Integer or float to convert.
         ndigits (int, None): Digits of precision for rounding after the decimal point.
+        separator (str, None): Thousands separator to use in the output. If None
+            (the default), the current locale's thousands separator is used.
 
     Returns:
-        str: String containing commas every three digits.
+        str: String containing separators every three digits.
     """
     import math
 
@@ -198,8 +212,11 @@ def intcomma(value: NumberOrString, ndigits: int | None = None) -> str:
         result = f"{value:,.{ndigits}f}"
     else:
         result = f"{value:,}"
+    if separator is not None:
+        thousands_sep = separator
     if thousands_sep != "," or decimal_sep != ".":
-        result = result.translate(str.maketrans(",.", thousands_sep + decimal_sep))
+        table: dict[int, str] = {ord(","): thousands_sep, ord("."): decimal_sep}
+        result = result.translate(table)
     return result
 
 
